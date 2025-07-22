@@ -69,5 +69,18 @@ docker-compose up -d --build
 
 And it will start all of our containers in the VM. Then, we can run our individual containers by pulling them from Dockerhub into the VM, and running them with `docker run ...`. Be sure to specify the `--env-file` and `--network` arguements if needed. From there, everything should be able to be configured and run without issues!
 
+Please also be aware that the rust consumers and producers needed for this project require a `config.toml` file to store the needed lat/long and database url's for this project. The file should be set up as so
+
+```toml
+[location]
+latitude = 50.0000
+longitude = -50.0000
+
+[database]
+db_url = "postgres://your_user:your_pass@your_address:5432/your_db"
+```
+
+And should be stored in the same location as the `.env` file on the engine (in the users home directory)
+
 ### Additional Notes
 I understand that this setup is not practical for actual production level solutions. However, I am trying to refamiliarize myself with cloud platforms after not touching them for quite some time. You may want to instead use Google Artifact Registry, Vertex AI, Kubernetes Engine, etc, to configure all of your services. I do not have the funds nor the time to explore all of that right now. I'm happy enough with this solution as is, but will explain more on how this project could be furthered. Perhaps as I complete other projects, I can explore these solutions on GCP, as well as other platforms like AWS and Azure. But, given how much work I have put into this project as a whole, I am overjoyed at what I have been able to come up with. 
