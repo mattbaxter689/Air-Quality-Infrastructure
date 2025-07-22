@@ -1,0 +1,142 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.9.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+    networks:
+      - example-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.9.1
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - example-net
+
+  kafka_postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: kafka_postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./docker/init_db_schema.sql:/docker-entrypoint-initdb.d/init_db_schema.sql
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - example-net
+
+  topic-init:
+    image: confluentinc/cp-kafka:7.9.1
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/bash", "-c", "/create_topic.sh"]
+    volumes:
+      - ./create_topic.sh:/create_topic.sh
+    networks:
+      - example-net
+
+  postgres:
+    image: postgres:14
+    container_name: mlflow_postgres
+    environment:
+      - POSTGRES_USER=${MLFLOW_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${MLFLOW_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${MLFLOW_POSTGRES_DB}
+      - POSTGRES_PORT=5433
+    ports:
+      - "5433:5433"
+    command: -p 5433
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - example-net
+
+  minio:
+    image: minio/minio
+    container_name: mlflow_minio
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 5
+    environment:
+      - MINIO_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
+      - MINIO_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - example-net
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    container_name: mlflow_server
+    depends_on:
+      - postgres
+      - minio
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY${AWS_SECRET_ACCESS_KEY}
+    command: >
+      mlflow server
+        --backend-store-uri postgresql://mlflow:mlflowpass@mlflow_postgres:5433/mlflowdb
+        --default-artifact-root s3://mlflow/
+        --host 0.0.0.0
+        --port 5000
+    networks:
+      - example-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - example-net
+
+networks:
+  example-net:
+    driver: bridge
+
+volumes:
+  rust_kafka:
+    driver: local
+  pgdata:
+  postgres_data:
+  minio_data:
+  grafana-storage:
