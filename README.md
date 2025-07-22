@@ -2,7 +2,12 @@
 This repository handles creating the infrastructure behind the entire air quality project so that it can be deployed on a cloud solution. There are several steps to get everything configured, so I will do my best to ensure that everything is explained as in-depth as possible. It is also good for me to do so so when I come back and need help with deploying cloud solutions, I can reference this without being confused.
 
 ### Note
-Please be aware that this solution looks to deploy everything to a single GCP Compute Engine instance. Understandably, this is not used in industry or even desired. However, for my personal development and both cost incurred for more in depths solutions like Vertex AI, this is more than enough for this current project. As time goes on, and with other projects, I may explore a cloud-first solution rather than local development. For now, this solution for this project works, and I will aim to explain how it could be improved.
+Please be aware that this solution looks to deploy everything to a single GCP Compute Engine instance. Understandably, this is not used in industry or even desired. However, for my personal development and both cost incurred for more in depths solutions like Vertex AI, this is more than enough for this current project. As time goes on, and with other projects, I may explore a cloud-first solution rather than local development. For now, this solution for this project works, and I will aim to explain how it could be improved. Before starting, make sure you are logged in
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+```
 
 ### Docker
 Since applications inside the compute engine will be deployed with docker and docker compose, we should ensure that those are installed on startup of the compute engine. There is `scripts/startup.sh.tpl` file that specifies the installation instructions, as well as adds the user to the docker group, so there is no need to run `sudo` commands to access the Docker daemon. When you first SSH into the VM, you will need to exit, then re-enter for the change to actually take effect on your user. Then you should be able to run the commands without issue!
