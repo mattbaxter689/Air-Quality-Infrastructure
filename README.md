@@ -80,7 +80,18 @@ longitude = -50.0000
 db_url = "postgres://your_user:your_pass@your_address:5432/your_db"
 ```
 
-And should be stored in the same location as the `.env` file on the engine (in the users home directory)
+And should be stored in the same location as the `.env` file on the engine (in the users home directory).
+
+In order to create a single network for weverything to use (and rather than relying on Docker naming the network), we could create the network with
+
+```bash
+docker network create -d bridge example-net
+```
+
+This will create the named network that we can pass to any docker image or
+container that will run on the GCP Compute Engine instance. We would just then
+need to add to the compose file that the network comes from external, ad we are
+all set.
 
 ### Additional Notes
 I understand that this setup is not practical for actual production level solutions. However, I am trying to refamiliarize myself with cloud platforms after not touching them for quite some time. You may want to instead use Google Artifact Registry, Vertex AI, Kubernetes Engine, etc, to configure all of your services. I do not have the funds nor the time to explore all of that right now. I'm happy enough with this solution as is, but will explain more on how this project could be furthered. Perhaps as I complete other projects, I can explore these solutions on GCP, as well as other platforms like AWS and Azure. But, given how much work I have put into this project as a whole, I am overjoyed at what I have been able to come up with. 
