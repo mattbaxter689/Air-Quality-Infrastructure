@@ -137,6 +137,15 @@ services:
     networks:
       - example-net
 
+  redis:
+    image: redis:8.0.3
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - example-net
+
 networks:
   example-net:
     driver: bridge
@@ -148,3 +157,4 @@ volumes:
   postgres_data:
   minio_data:
   grafana-storage:
+  redis_data:
